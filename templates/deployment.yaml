@@ -1,33 +1,68 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "microservice.name" . }}
+  name: {{ .Release.Name }}
   labels:
-    app: {{ include "microservice.name" . }}
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.replicaCount | default 1 }}
   selector:
-    matchLabels: { app: {{ include "microservice.name" . }} }
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app: {{ include "microservice.name" . }}
-      annotations: {{ toYaml .Values.podAnnotations | nindent 8 }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/name: {{ .Chart.Name }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
+      {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
-      # контейнер
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
-      - name: {{ include "microservice.name" . }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
-        command: {{ toYaml .Values.command | default "[]" | nindent 8 }}
-        args: {{ toYaml .Values.args | default "[]" | nindent 8 }}
-        ports:
-        - containerPort: {{ .Values.service.port }}
-        env: {{ toYaml .Values.env | nindent 8 }}
-        readinessProbe: {{ toYaml .Values.readinessProbe | nindent 8 }}
-        livenessProbe: {{ toYaml .Values.livenessProbe | nindent 8 }}
-        resources: {{ toYaml .Values.resources | nindent 8 }}
-      nodeSelector: {{ toYaml .Values.nodeSelector | nindent 6 }}
-      tolerations: {{ toYaml .Values.tolerations | nindent 6 }}
-      affinity: {{ toYaml .Values.affinity | nindent 6 }}
+        - name: {{ .Release.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - containerPort: {{ .Values.service.port | default 80 }}
+          {{- with .Values.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
