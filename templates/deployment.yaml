@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "microservice.name" . }}
+  labels:
+    app: {{ include "microservice.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: { app: {{ include "microservice.name" . }} }
+  template:
+    metadata:
+      labels:
+        app: {{ include "microservice.name" . }}
+      annotations: {{ toYaml .Values.podAnnotations | nindent 8 }}
+    spec:
+      imagePullSecrets:
+      # контейнер
+      containers:
+      - name: {{ include "microservice.name" . }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command: {{ toYaml .Values.command | default "[]" | nindent 8 }}
+        args: {{ toYaml .Values.args | default "[]" | nindent 8 }}
+        ports:
+        - containerPort: {{ .Values.service.port }}
+        env: {{ toYaml .Values.env | nindent 8 }}
+        readinessProbe: {{ toYaml .Values.readinessProbe | nindent 8 }}
+        livenessProbe: {{ toYaml .Values.livenessProbe | nindent 8 }}
+        resources: {{ toYaml .Values.resources | nindent 8 }}
+      nodeSelector: {{ toYaml .Values.nodeSelector | nindent 6 }}
+      tolerations: {{ toYaml .Values.tolerations | nindent 6 }}
+      affinity: {{ toYaml .Values.affinity | nindent 6 }}
